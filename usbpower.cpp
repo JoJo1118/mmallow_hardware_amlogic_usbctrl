@@ -23,6 +23,9 @@
 #define CONNECT_STR		"Bus Connected = 0x"
 #define CONNECT_FILE_NAME	"/sys/devices/lm0/busconnected"
 
+#define GOTGCTL_STR		"GOTGCTL = 0x"
+#define GOTGCTL_FILE_NAME	"/sys/devices/lm0/gotgctl"
+
 #define USB_IDX_A	0
 #define USB_IDX_B	1
 #define USB_IDX_MAX	2
@@ -31,6 +34,13 @@
 #define USB_CMD_OFF	1
 #define USB_CMD_IF	2
 #define USB_CMD_MAX	3
+
+#define USB_ID	16
+#define USB_ID_HOST		0x0
+#define USB_ID_DEVICE	0x1
+
+#define USB_SES	18
+#define USB_SES_VALID	0x3
 
 char usb_index_str[USB_IDX_MAX][2]=
 {
@@ -55,30 +65,76 @@ static void usage(void)
 static int get_device_if(int idx)
 {
 	int ret = 0;
+	int err = 0;
 	char line[32];
 	char filename[32];
 	FILE *fp;
+	unsigned int busconnect,gotgctl;
 
+	strcpy(filename,GOTGCTL_FILE_NAME);
+	filename[15] = idx + '0';
+
+	if((fp = fopen(filename,"r"))) {
+		if (fgets(line, 32, fp)) {
+			if (!strncmp(line, GOTGCTL_STR, strlen(GOTGCTL_STR))) {
+				sscanf(line+strlen(GOTGCTL_STR),"%x",&gotgctl);
+			}
+			else
+			{
+				SLOGE("gotgctl txt is error\n");
+				err =1;
+			}
+		} else {
+			SLOGE("Failed to read gotgctl\n");
+			err=2;
+		}
+
+		fclose(fp);
+	} else {
+		SLOGW("No usb device\n");
+		err=3;
+	}
+	
+	if(err)
+		return 0;
+	
 	strcpy(filename,CONNECT_FILE_NAME);
 	filename[15] = idx + '0';
 
 	if((fp = fopen(filename,"r"))) {
 		if (fgets(line, 32, fp)) {
 			if (!strncmp(line, CONNECT_STR, strlen(CONNECT_STR))) {
-				if(!strncmp(line+strlen(CONNECT_STR),"1",1))
-       				ret = 1;
-       		} else {
+				sscanf(line+strlen(CONNECT_STR),"%x",&busconnect);
+      } else {
 				SLOGE("busconnected txt is error\n");
+				err=4;
 			}
 		} else {
 			SLOGE("Failed to read busconnected\n");
+			err=5;
 		}
 
 		fclose(fp);
 	} else {
 		SLOGW("No usb device\n");
+		err=6;
 	}
 
+	if(err)
+		return 0;
+		
+	if(((gotgctl>>USB_ID)&0x1)==	USB_ID_HOST)
+	{
+		// this case,check busconnected
+		if(busconnect==1)
+			ret = 1;
+	}
+	else
+	{
+		// this case,check gotgctl USB_SES_VALID
+		if(((gotgctl>>USB_SES)&0x3)== USB_SES_VALID)
+			ret = 1;
+	}
 	return ret;
 }
 
