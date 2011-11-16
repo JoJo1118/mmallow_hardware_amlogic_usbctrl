@@ -91,7 +91,7 @@ static int get_device_if(int idx)
 
 		fclose(fp);
 	} else {
-		SLOGW("No usb device\n");
+		//SLOGW("No usb device\n");
 		err=3;
 	}
 	
@@ -116,7 +116,7 @@ static int get_device_if(int idx)
 
 		fclose(fp);
 	} else {
-		SLOGW("No usb device\n");
+		//SLOGW("No usb device\n");
 		err=6;
 	}
 
@@ -231,11 +231,12 @@ USAGE:
 	else if(cmd == USB_CMD_IF)
 	{
 		ret = get_device_if(index);
-		
+#if 0
 		if(ret == 1 )
 			printf("Has Device\n");
 		else
 			printf("No device\n");
+#endif
 	}
 
 	return ret;
