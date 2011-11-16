@@ -24,7 +24,8 @@
 #include <fcntl.h>
 
 #include "private/android_filesystem_config.h"
-#include "cutils/log.h"
+//#include "cutils/log.h"
+#define LOG(x...) 
 
 int parent(const char *tag, int parent_read) {
     int status;
