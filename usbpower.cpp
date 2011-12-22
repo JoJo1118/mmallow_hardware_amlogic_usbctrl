@@ -143,8 +143,12 @@ static int get_device_if(int idx)
 static int set_power_ctl(int idx,int cmd)
 {
 	int ret = 0;
-	FILE *fp,*fpp = NULL,*fpo = NULL;	
-
+	int err = 0;
+	FILE *fp,*fpp = NULL,*fpo = NULL, *fp_gotgctl;	
+  unsigned int gotgctl;
+  char filename[32];
+  char line[32];
+  
 	if(cmd == USB_CMD_OFF)
 	{
 		ret = get_device_if(idx);
@@ -154,7 +158,34 @@ static int set_power_ctl(int idx,int cmd)
 			return ret;
 		}
 	}
+	
+	strcpy(filename,GOTGCTL_FILE_NAME);
+	filename[15] = idx + '0';
 
+	if((fp_gotgctl = fopen(filename,"r"))) {
+		if (fgets(line, 32, fp_gotgctl)) {
+			if (!strncmp(line, GOTGCTL_STR, strlen(GOTGCTL_STR))) {
+				sscanf(line+strlen(GOTGCTL_STR),"%x",&gotgctl);
+			}
+			else
+			{
+				SLOGE("gotgctl txt is error\n");
+				err =1;
+			}
+		} else {
+			SLOGE("Failed to read gotgctl\n");
+			err=2;
+		}
+
+		fclose(fp_gotgctl);
+	} else {
+		//SLOGW("No usb device\n");
+		err=3;
+	}
+	
+	if(err)
+		return -1;
+		
 	if((fp = fopen(IDX_ATTR_FILENAME,"w"))){   
     	fwrite(usb_index_str[idx], 1, strlen(usb_index_str[idx]),fp);
     	fclose(fp);
@@ -163,22 +194,35 @@ static int set_power_ctl(int idx,int cmd)
 	{
 		ret = -1;
 	}
-
+	
 	if(ret == 0)
 	{
-		if((fp = fopen(POWER_ATTR_FILENAME,"w")) && (fpp = fopen(PULLUP_FILE_NAME,"w"))
-				 && (fpo = fopen(OTG_DISABLE_FILE_NAME,"w"))){  				
-			fwrite(usb_state_str[cmd], 1, strlen(usb_state_str[cmd]),fpo);	//otg		
-			fwrite(usb_state_str[cmd], 1, strlen(usb_state_str[cmd]),fpp);	//pullup
-			fwrite(usb_state_str[cmd], 1, strlen(usb_state_str[cmd]),fp);	//power				
+		if(((gotgctl>>USB_ID)&0x1)==	USB_ID_HOST)
+		{
+			if((fp = fopen(POWER_ATTR_FILENAME,"w"))){
+				fwrite(usb_state_str[cmd], 1, strlen(usb_state_str[cmd]),fp);	//power	
+			}else
+			{
+				ret = -2;
+			}
+			if(fp) fclose(fp);
 		}
 		else
 		{
-			ret = -2;
-		}
-		if(fp) fclose(fp);
-    		if(fpp)	fclose(fpp);
-		if(fpo)	fclose(fpo);
+		  if((fp = fopen(POWER_ATTR_FILENAME,"w")) && (fpp = fopen(PULLUP_FILE_NAME,"w"))
+				 && (fpo = fopen(OTG_DISABLE_FILE_NAME,"w"))){  				
+			  fwrite(usb_state_str[cmd], 1, strlen(usb_state_str[cmd]),fpo);	//otg		
+			  fwrite(usb_state_str[cmd], 1, strlen(usb_state_str[cmd]),fpp);	//pullup
+			  fwrite(usb_state_str[cmd], 1, strlen(usb_state_str[cmd]),fp);	//power				
+		  }
+		  else
+		  {
+			  ret = -2;
+		  }
+		  if(fp) fclose(fp);
+    	if(fpp)	fclose(fpp);
+		  if(fpo)	fclose(fpo);
+		}		
 	}
 
 	return ret;
