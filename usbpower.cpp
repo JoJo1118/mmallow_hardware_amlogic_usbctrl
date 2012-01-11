@@ -210,10 +210,19 @@ static int set_power_ctl(int idx,int cmd)
 		else
 		{
 		  if((fp = fopen(POWER_ATTR_FILENAME,"w")) && (fpp = fopen(PULLUP_FILE_NAME,"w"))
-				 && (fpo = fopen(OTG_DISABLE_FILE_NAME,"w"))){  				
-			  fwrite(usb_state_str[cmd], 1, strlen(usb_state_str[cmd]),fpo);	//otg		
-			  fwrite(usb_state_str[cmd], 1, strlen(usb_state_str[cmd]),fpp);	//pullup
-			  fwrite(usb_state_str[cmd], 1, strlen(usb_state_str[cmd]),fp);	//power				
+				 && (fpo = fopen(OTG_DISABLE_FILE_NAME,"w"))){ 
+				if(cmd == USB_CMD_OFF)
+				{
+				  fwrite(usb_state_str[cmd], 1, strlen(usb_state_str[cmd]),fpo);	//otg		
+			    fwrite(usb_state_str[cmd], 1, strlen(usb_state_str[cmd]),fpp);	//pullup
+			    fwrite(usb_state_str[cmd], 1, strlen(usb_state_str[cmd]),fp);	//power
+				}
+				else
+				{ 
+				  fwrite(usb_state_str[cmd], 1, strlen(usb_state_str[cmd]),fp);	//power 				
+			    fwrite(usb_state_str[cmd], 1, strlen(usb_state_str[cmd]),fpo);	//otg		
+			    fwrite(usb_state_str[cmd], 1, strlen(usb_state_str[cmd]),fpp);	//pullup
+			  }				
 		  }
 		  else
 		  {
