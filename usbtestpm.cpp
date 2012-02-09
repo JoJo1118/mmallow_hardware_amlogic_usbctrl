@@ -135,7 +135,7 @@ int main()
 					usbset(1,USB_CMD_OFF);						
 			}
 			
-			sleep(2);	//check every 2s
+			sleep(1);	//check every 2s
 		
 		}
 	}
