@@ -110,29 +110,56 @@ int main()
 {   
 	int usb_a_exist = 0;
 	int usb_b_exist = 0;
+	int a_on_flag,b_on_flag;
 	
 	if (check_usb_devices_exists(0) == 0)
+	{
 		usb_a_exist = 1;
+		a_on_flag = 1;
+	}
 	else
 		usbset(0,USB_CMD_OFF);
 	
 	if (check_usb_devices_exists(1) == 0)
+	{
 		usb_b_exist = 1;
+		b_on_flag = 1;
+	}
 	else
 		usbset(1,USB_CMD_OFF);	
 	
 	if (usb_a_exist || usb_b_exist) {
 		while(1) {
 			if (usb_a_exist) {
-				usbset(0,USB_CMD_ON);
-				if (usbcheck(0) != 1) 
-					usbset(0,USB_CMD_OFF);					
+				if(a_on_flag == 0)
+				{
+					usbset(0,USB_CMD_ON);
+					a_on_flag = 1;	
+				}
+				else
+				{
+					if (usbcheck(0) != 1)
+					{ 
+						usbset(0,USB_CMD_OFF);
+						a_on_flag = 0;
+					}	
+				}					
 			}
 			
 			if (usb_b_exist) {
-				usbset(1,USB_CMD_ON);
-				if (usbcheck(1) != 1) 
-					usbset(1,USB_CMD_OFF);						
+				if(b_on_flag == 0)
+				{
+					usbset(1,USB_CMD_ON);
+					b_on_flag = 1;
+				}
+				else
+				{
+					if (usbcheck(1) != 1)
+					{ 
+						usbset(1,USB_CMD_OFF);
+						b_on_flag = 0;
+					}
+				}						
 			}
 			
 			sleep(1);	//check every 2s
