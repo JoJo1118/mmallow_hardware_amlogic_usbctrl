@@ -33,8 +33,10 @@
 #define IDX_ATTR_FILENAME	"/sys/devices/platform/usb_phy_control/index"
 
 #define POWER_ATTR_FILENAME_1		"/sys/devices/platform/usb_phy_control/por"
-#define POWER_ATTR_FILENAME_2		"/sys/devices/lm0/peri_iddq"
-#define POWER_ATTR_FILENAME_3		"/sys/devices/lm0/peri_iddq"
+//#define POWER_ATTR_FILENAME_2		"/sys/devices/lm0/peri_iddq"
+//#define POWER_ATTR_FILENAME_3		"/sys/devices/lm0/peri_iddq"
+#define POWER_ATTR_FILENAME_2		"/sys/devices/lm0/peri_power"
+#define POWER_ATTR_FILENAME_3		"/sys/devices/lm0/peri_power"
 
 #define OTG_DISABLE_FILE_NAME_1	"/sys/devices/platform/usb_phy_control/otgdisable"
 #define OTG_DISABLE_FILE_NAME_2	"/sys/devices/lm0/peri_otg_disable"
@@ -294,7 +296,7 @@ static int set_power_ctl(int idx,int cmd)
 		if(((gotgctl>>USB_ID)&0x1)==	USB_ID_HOST)
 		{
 			if((fp = fopen(power_attr_filename_str[version],"w"))){
-				fwrite(usb_state_val[cmd], 1, strlen(usb_state_val[cmd]),fp);	//power	
+				fwrite(usb_state_val[1-cmd], 1, strlen(usb_state_val[1-cmd]),fp);	//power	
 			}
 			else
 			{
@@ -309,11 +311,11 @@ static int set_power_ctl(int idx,int cmd)
 				if(cmd == USB_CMD_OFF)
 				{
 				 	fwrite(usb_state_val[cmd], 1, strlen(usb_state_val[cmd]),fpo);	//otg		
-			    		fwrite(usb_state_val[cmd], 1, strlen(usb_state_val[cmd]),fp);	//power
+			    		fwrite(usb_state_val[1-cmd], 1, strlen(usb_state_val[1-cmd]),fp);	//power
 				}
 				else
 				{ 
-				  	fwrite(usb_state_val[cmd], 1, strlen(usb_state_val[cmd]),fp);	//power 				
+				  	fwrite(usb_state_val[1-cmd], 1, strlen(usb_state_val[1-cmd]),fp);	//power 				
 			    		fwrite(usb_state_val[cmd], 1, strlen(usb_state_val[cmd]),fpo);	//otg		
 			  	}				
 		  	}
