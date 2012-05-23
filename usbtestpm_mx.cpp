@@ -143,7 +143,8 @@ int main()
 				if(on_flag == 0)
 				{
 					usbset(0,USB_CMD_ON);
-					on_flag = 1;	
+					on_flag = 1;
+					usleep(250000);	
 				}
 				else
 				{
@@ -157,10 +158,9 @@ int main()
 						usbset(0,USB_CMD_OFF);
 						on_flag = 0;
 					}	
+					sleep(1);
 				}					
-			
-			sleep(1);	//check every 2s
-		
+					
 		}
 	}
 	else

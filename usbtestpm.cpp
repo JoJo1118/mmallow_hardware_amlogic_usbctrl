@@ -135,6 +135,12 @@ int main()
 				{
 					usbset(0,USB_CMD_ON);
 					a_on_flag = 1;	
+					usleep(250000);
+					if (usbcheck(0) != 1)
+					{ 
+						usbset(0,USB_CMD_OFF);
+						a_on_flag = 0;
+					}	
 				}
 				else
 				{
@@ -151,6 +157,12 @@ int main()
 				{
 					usbset(1,USB_CMD_ON);
 					b_on_flag = 1;
+					usleep(250000);
+					if (usbcheck(1) != 1)
+					{ 
+						usbset(1,USB_CMD_OFF);
+						b_on_flag = 0;
+					}
 				}
 				else
 				{
@@ -162,7 +174,7 @@ int main()
 				}						
 			}
 			
-			sleep(1);	//check every 2s
+			usleep(750000);	//
 		
 		}
 	}
