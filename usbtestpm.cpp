@@ -15,73 +15,20 @@
 #include "cutils/log.h"
 #include  "cutils/properties.h"
 
-extern "C" int logwrap(int argc, const char **argv, int background);
-
-static char USBPOWER_PATH[] = "/system/bin/usbpower";
-
-#define USB_IDX_A	0
-#define USB_IDX_B	1
-#define USB_IDX_MAX	2
-
-#define USB_CMD_ON	0
-#define USB_CMD_OFF	1
-#define USB_CMD_IF	2
-#define USB_CMD_MAX	3
-
-char usb_index_str[USB_IDX_MAX][2]=
-{
-	"A","B"
-};
-
-char usb_state_str[USB_CMD_MAX][8]=
-{
-	"on","off","if"
-};
+#include "usbctrl.h"
 
 
 int usbcheck(int index) 
 {
-	bool rw = true;
-    if (access(USBPOWER_PATH, X_OK)) {
-        SLOGW("No USBPOWER_PATH file\n");
-        return -1;
-    }
-
     int rc = 0;
-    do {
-        const char *args[4];
-        args[0] = USBPOWER_PATH;
-        args[1] = usb_index_str[index];
-        args[2] = usb_state_str[USB_CMD_IF];
-        args[3] = NULL;
-
-        rc = logwrap(3, args, 1);
-
-    } while (0);
-
+	rc = usbpower(index,USB_CMD_IF);
     return rc;
 }
 
 int usbset(int index,int cmd) 
 {
-	bool rw = true;
-    if (access(USBPOWER_PATH, X_OK)) {
-        SLOGW("No USBPOWER_PATH file\n");
-        return -1;
-    }
-
     int rc = 0;
-    do {
-        const char *args[4];
-        args[0] = USBPOWER_PATH;
-        args[1] = usb_index_str[index];
-        args[2] = usb_state_str[cmd];
-        args[3] = NULL;
-
-        rc = logwrap(3, args, 1);
-
-    } while (0);
-
+	rc = usbpower(index,cmd);
     return rc;
 }
 
@@ -111,6 +58,15 @@ int main()
 	int usb_a_exist = 0;
 	int usb_b_exist = 0;
 	int a_on_flag,b_on_flag;
+	int ret;
+
+	ret = get_dwc_driver_version();
+
+	if(ret == -1)
+	{
+		printf("This dwc_otg version not support. Please check!\n");
+		return -1;
+	}
 	
 	if (check_usb_devices_exists(0) == 0)
 	{
