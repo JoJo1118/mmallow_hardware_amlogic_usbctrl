@@ -91,7 +91,7 @@ int main()
 				{
 					usbset(0,USB_CMD_ON);
 					a_on_flag = 1;	
-					usleep(250000);
+					usleep(500000);
 					if (usbcheck(0) != 1)
 					{ 
 						usbset(0,USB_CMD_OFF);
@@ -113,7 +113,7 @@ int main()
 				{
 					usbset(1,USB_CMD_ON);
 					b_on_flag = 1;
-					usleep(250000);
+					usleep(500000);
 					if (usbcheck(1) != 1)
 					{ 
 						usbset(1,USB_CMD_OFF);
@@ -130,7 +130,7 @@ int main()
 				}						
 			}
 			
-			usleep(750000);	//
+			usleep(500000);	//
 		
 		}
 	}

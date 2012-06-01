@@ -99,7 +99,7 @@ int main()
 				{
 					usbset(0,USB_CMD_ON);
 					on_flag = 1;
-					usleep(250000);	
+					usleep(500000);	
 				}
 				else
 				{
