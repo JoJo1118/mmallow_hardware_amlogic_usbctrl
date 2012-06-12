@@ -53,13 +53,35 @@ int check_usb_devices_exists(int port)
 		
 }
 
-int main()
+int main(int argc,  char * argv[])
 {   
 	int usb_a_exist = 0;
 	int usb_b_exist = 0;
 	int a_on_flag,b_on_flag;
 	int ret;
+	char * parastr=NULL;
+	int para_a=1,para_b=1;
 
+	parastr = argv[1];
+
+	if(parastr!=NULL)
+	{
+		if(strcmp(parastr, "AB")==0)
+		{
+			para_a = 1;
+			para_b = 1;
+		}
+		else if(strcmp(parastr, "A")==0)
+		{
+			para_a = 1;
+			para_b = 0;
+		}
+		else if(strcmp(parastr, "B")==0)
+		{
+			para_a = 0;
+			para_b = 1;
+		}
+	}
 	ret = get_dwc_driver_version();
 
 	if(ret == -1)
@@ -68,7 +90,7 @@ int main()
 		return -1;
 	}
 	
-	if (check_usb_devices_exists(0) == 0)
+	if(para_a && (check_usb_devices_exists(0) == 0))
 	{
 		usb_a_exist = 1;
 		a_on_flag = 1;
@@ -76,7 +98,7 @@ int main()
 	else
 		usbset(0,USB_CMD_OFF);
 	
-	if (check_usb_devices_exists(1) == 0)
+	if (para_b &&(check_usb_devices_exists(1) == 0))
 	{
 		usb_b_exist = 1;
 		b_on_flag = 1;
