@@ -50,8 +50,6 @@
 #define GOTGCTL_STR			"GOTGCTL = 0x"
 #define GOTGCTL_FILE_NAME	"/sys/devices/lm0/gotgctl"
 
-#define USB_GATE_OFF_FILE_NAME	"/sys/class/aml_mod/mod_off"
-#define USB_GATE_ON_FILE_NAME	"/sys/class/aml_mod/mod_on"
 
 #define USB_ID			16
 #define USB_ID_HOST		0x0
@@ -97,7 +95,6 @@ char usb_state_val[USB_CMD_MAX][2]=
 	"0","1","2"
 };
 char pullup_filename_str[32];
-char usb_gate_str[8]={"usb0"};
 
 static void usage(void)
 {
@@ -188,7 +185,7 @@ static int set_power_ctl(int idx,int cmd)
 {
 	int ret = 0;
 	int err = 0;
-	FILE *fp,*fpp = NULL,*fpo = NULL, *fp_gotgctl,*fp_gate;	
+	FILE *fp,*fpp = NULL,*fpo = NULL, *fp_gotgctl;	
   	unsigned int gotgctl;
   	char filename[32];
   	char line[32];
@@ -288,29 +285,11 @@ static int set_power_ctl(int idx,int cmd)
 	{
 		power_attr_filename_str[version][15] = idx + '0';
 		otg_disable_filename_str[version][15]= idx + '0';
-		usb_gate_str[3] = idx + '0';
-		
+
 		if(((gotgctl>>USB_ID)&0x1)==	USB_ID_HOST)
 		{
 			if((fp = fopen(power_attr_filename_str[version],"w"))){
-				if(cmd == USB_CMD_OFF)
-				{
-					fwrite(usb_state_val[cmd], 1, strlen(usb_state_val[cmd]),fp);	//power
-					fp_gate = fopen(USB_GATE_OFF_FILE_NAME,"w");
-					if(fp_gate){
-						fwrite(usb_gate_str,1,strlen(usb_gate_str),fp_gate);
-						fclose(fp_gate);
-					}
-				}
-				else
-				{ 
-				  	fp_gate = fopen(USB_GATE_ON_FILE_NAME,"w");
-					if(fp_gate){
-						fwrite(usb_gate_str,1,strlen(usb_gate_str),fp_gate);
-						fclose(fp_gate);
-					}
-					fwrite(usb_state_val[cmd], 1, strlen(usb_state_val[cmd]),fp);	//power
-			  	}		
+				fwrite(usb_state_val[cmd], 1, strlen(usb_state_val[cmd]),fp);	//power	
 			}
 			else
 			{
@@ -326,19 +305,9 @@ static int set_power_ctl(int idx,int cmd)
 				{
 				 	fwrite(usb_state_val[cmd], 1, strlen(usb_state_val[cmd]),fpo);	//otg		
 			    		fwrite(usb_state_val[cmd], 1, strlen(usb_state_val[cmd]),fp);	//power
-			    		fp_gate = fopen(USB_GATE_OFF_FILE_NAME,"w");
-					if(fp_gate){
-						fwrite(usb_gate_str,1,strlen(usb_gate_str),fp_gate);
-						fclose(fp_gate);
-					}
 				}
 				else
 				{ 
-					fp_gate = fopen(USB_GATE_ON_FILE_NAME,"w");
-					if(fp_gate){
-						fwrite(usb_gate_str,1,strlen(usb_gate_str),fp_gate);
-						fclose(fp_gate);
-					}
 				  	fwrite(usb_state_val[cmd], 1, strlen(usb_state_val[cmd]),fp);	//power 				
 			    		fwrite(usb_state_val[cmd], 1, strlen(usb_state_val[cmd]),fpo);	//otg		
 			  	}				
