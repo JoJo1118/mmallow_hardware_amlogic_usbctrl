@@ -171,9 +171,17 @@ static int get_device_if(int idx)
 		
 	if(((gotgctl>>USB_ID)&0x1)==	USB_ID_HOST)
 	{
-		// this case,check busconnected
-		if(busconnect==1)
+		if(((gotgctl>>USB_SES)&0x3)== USB_SES_VALID)
+		{
+			// this case,check busconnected
+			if(busconnect==1)
+				ret = 1;
+		}
+		else
+		{
+			//this case ,can't power of,so we look it as connect
 			ret = 1;
+		}
 	}
 	else
 	{
