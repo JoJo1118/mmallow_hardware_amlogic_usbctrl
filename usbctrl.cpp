@@ -22,11 +22,13 @@
 #define DWC_DRIVER_1			0
 #define DWC_DRIVER_2			1
 #define DWC_DRIVER_3			2
-#define DWC_DRIVER_MAX			3
+#define DWC_DRIVER_4			3
+#define DWC_DRIVER_MAX			4
 
 #define DWC_DRIVER_VERSION_1	"2.60a"
 #define DWC_DRIVER_VERSION_2  	"2.20a"
 #define DWC_DRIVER_VERSION_3  	"2.94a"
+#define DWC_DRIVER_VERSION_4  	"3.10a"
 #define DWC_DRIVER_VERSION_LEN	5
 
 #define DWC_OTG_VERSION_DIR	"/sys/bus/logicmodule/drivers/dwc_otg/version"
@@ -36,12 +38,14 @@
 #define POWER_ATTR_FILENAME_1		"/sys/devices/platform/usb_phy_control/por"
 #define POWER_ATTR_FILENAME_2		"/sys/devices/lm0/peri_sleepm"
 #define POWER_ATTR_FILENAME_3		"/sys/devices/lm0/peri_sleepm"
+#define POWER_ATTR_FILENAME_4		"/sys/devices/lm0/peri_sleepm"
 //#define POWER_ATTR_FILENAME_2		"/sys/devices/lm0/peri_power"
 //#define POWER_ATTR_FILENAME_3		"/sys/devices/lm0/peri_power"
 
 #define OTG_DISABLE_FILE_NAME_1	"/sys/devices/platform/usb_phy_control/otgdisable"
 #define OTG_DISABLE_FILE_NAME_2	"/sys/devices/lm0/peri_otg_disable"
 #define OTG_DISABLE_FILE_NAME_3	"/sys/devices/lm0/peri_otg_disable"
+#define OTG_DISABLE_FILE_NAME_4	"/sys/devices/lm0/peri_otg_disable"
 
 #define CONNECT_STR			"Bus Connected = 0x"
 #define CONNECT_FILE_NAME	"/sys/devices/lm0/busconnected"
@@ -65,21 +69,24 @@ char dwc_driver_version_str[DWC_DRIVER_MAX][DWC_DRIVER_VERSION_LEN+1] =
 {
 			DWC_DRIVER_VERSION_1,
 			DWC_DRIVER_VERSION_2,
-			DWC_DRIVER_VERSION_3
+			DWC_DRIVER_VERSION_3,
+			DWC_DRIVER_VERSION_4
 };
 
 char power_attr_filename_str[DWC_DRIVER_MAX][64] = 
 {
 			POWER_ATTR_FILENAME_1,
 			POWER_ATTR_FILENAME_2,
-			POWER_ATTR_FILENAME_3
+			POWER_ATTR_FILENAME_3,
+			POWER_ATTR_FILENAME_4
 };
 
 char otg_disable_filename_str[DWC_DRIVER_MAX][64]=
 {
 			OTG_DISABLE_FILE_NAME_1,
 			OTG_DISABLE_FILE_NAME_2,
-			OTG_DISABLE_FILE_NAME_3
+			OTG_DISABLE_FILE_NAME_3,
+			OTG_DISABLE_FILE_NAME_4
 };
 
 char usb_index_str[USB_IDX_MAX][2]=
