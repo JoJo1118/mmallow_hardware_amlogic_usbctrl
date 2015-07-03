@@ -32,6 +32,7 @@
 #define DWC_DRIVER_VERSION_LEN	5
 
 #define DWC_OTG_VERSION_DIR	"/sys/bus/logicmodule/drivers/dwc_otg/version"
+#define DWC_OTGS_VERSION_DIR	"/sys/devices/dwc2_a/version"
 
 #define IDX_ATTR_FILENAME	"/sys/devices/platform/usb_phy_control/index"
 
@@ -39,6 +40,7 @@
 #define POWER_ATTR_FILENAME_2		"/sys/devices/lm0/peri_sleepm"
 #define POWER_ATTR_FILENAME_3		"/sys/devices/lm0/peri_sleepm"
 #define POWER_ATTR_FILENAME_4		"/sys/devices/lm0/peri_sleepm"
+#define POWER_ATTR_FILENAME_5		"/sys/devices/dwc2_a/peri_sleepm"
 //#define POWER_ATTR_FILENAME_2		"/sys/devices/lm0/peri_power"
 //#define POWER_ATTR_FILENAME_3		"/sys/devices/lm0/peri_power"
 
@@ -46,13 +48,17 @@
 #define OTG_DISABLE_FILE_NAME_2	"/sys/devices/lm0/peri_otg_disable"
 #define OTG_DISABLE_FILE_NAME_3	"/sys/devices/lm0/peri_otg_disable"
 #define OTG_DISABLE_FILE_NAME_4	"/sys/devices/lm0/peri_otg_disable"
+#define OTG_DISABLE_FILE_NAME_5	"/sys/devices/dwc2_a/peri_otg_disable"
 
 #define CONNECT_STR			"Bus Connected = 0x"
 #define CONNECT_FILE_NAME	"/sys/devices/lm0/busconnected"
 #define PULLUP_FILE_NAME	"/sys/devices/lm0/pullup"
+#define CONNECTS_FILE_NAME	"/sys/devices/dwc2_a/busconnected"
+#define PULLUPS_FILE_NAME	"/sys/devices/dwc2_a/pullup"
 
 #define GOTGCTL_STR			"GOTGCTL = 0x"
 #define GOTGCTL_FILE_NAME	"/sys/devices/lm0/gotgctl"
+#define GOTGCTLS_FILE_NAME	"/sys/devices/dwc2_a/gotgctl"
 
 #define USB_GATE_OFF_FILE_NAME	"/sys/class/aml_mod/mod_off"
 #define USB_GATE_ON_FILE_NAME	"/sys/class/aml_mod/mod_on"
@@ -103,7 +109,9 @@ char usb_state_val[USB_CMD_MAX][2]=
 {
 	"0","1","2"
 };
-char pullup_filename_str[32];
+char pullup_filename[32];
+char power_attr_filename[64];
+char otg_disable_filename[64];
 char usb_gate_str[8]={"usb0"};
 
 static void usage(void)
@@ -120,12 +128,20 @@ static int get_device_if(int idx)
 	int ret = 0;
 	int err = 0;
 	char line[32];
-	char filename[32];
+	char filename[64];
 	FILE *fp;
 	unsigned int busconnect,gotgctl;
 
-	strcpy(filename,GOTGCTL_FILE_NAME);
-	filename[15] = idx + '0';
+	if (access(GOTGCTL_FILE_NAME, R_OK) == 0)
+	{
+		strcpy(filename,GOTGCTL_FILE_NAME);
+		filename[15] = idx + '0';
+	}
+	else
+	{
+		strcpy(filename,GOTGCTLS_FILE_NAME);
+		filename[18] = idx + 'a';
+	}
 
 	if((fp = fopen(filename,"r"))) {
 		if (fgets(line, 32, fp)) {
@@ -147,12 +163,20 @@ static int get_device_if(int idx)
 		//SLOGW("No usb device\n");
 		err=3;
 	}
-	
+
 	if(err)
 		return 0;
-	
-	strcpy(filename,CONNECT_FILE_NAME);
-	filename[15] = idx + '0';
+
+	if (access(CONNECT_FILE_NAME, R_OK) == 0)
+	{
+		strcpy(filename,CONNECT_FILE_NAME);
+		filename[15] = idx + '0';
+	}
+	else
+	{
+		strcpy(filename,CONNECTS_FILE_NAME);
+		filename[18] = idx + 'a';
+	}
 
 	if((fp = fopen(filename,"r"))) {
 		if (fgets(line, 32, fp)) {
@@ -216,7 +240,7 @@ static int set_power_ctl(int idx,int cmd)
   	char filename[32];
   	char line[32];
 	int version = dwc_driver_version;
-  
+
 	if(cmd == USB_CMD_OFF)
 	{
 		ret = get_device_if(idx);
@@ -226,9 +250,17 @@ static int set_power_ctl(int idx,int cmd)
 			return ret;
 		}
 	}
-	
-	strcpy(filename,GOTGCTL_FILE_NAME);
-	filename[15] = idx + '0';
+
+	if (access(GOTGCTL_FILE_NAME, R_OK) == 0)
+	{
+		strcpy(filename,GOTGCTL_FILE_NAME);
+		filename[15] = idx + '0';
+	}
+	else
+	{
+		strcpy(filename,GOTGCTLS_FILE_NAME);
+		filename[18] = idx + 'a';
+	}
 
 	if((fp_gotgctl = fopen(filename,"r"))) {
 		if (fgets(line, 32, fp_gotgctl)) {
@@ -250,13 +282,13 @@ static int set_power_ctl(int idx,int cmd)
 		//SLOGW("No usb device\n");
 		err=3;
 	}
-	
+
 	if(err)
 		return -1;
 
 	if(version == DWC_DRIVER_1)
 	{
-		if((fp = fopen(IDX_ATTR_FILENAME,"w"))){   
+		if ((fp = fopen(IDX_ATTR_FILENAME,"w"))) {
 		    	fwrite(usb_index_str[idx], 1, strlen(usb_index_str[idx]),fp);
 		    	fclose(fp);
 		}
@@ -264,61 +296,77 @@ static int set_power_ctl(int idx,int cmd)
 		{
 			ret = -1;
 		}
-		
-		if(ret == 0)
+
+		if (ret == 0)
 		{
-			if(((gotgctl>>USB_ID)&0x1)==	USB_ID_HOST)
+			if (((gotgctl>>USB_ID)&0x1) == USB_ID_HOST)
 			{
-				if((fp = fopen(power_attr_filename_str[version],"w"))){
-					fwrite(usb_state_str[cmd], 1, strlen(usb_state_str[cmd]),fp);	//power	
-				}
-				else
-				{
+				if ((fp = fopen(power_attr_filename_str[version],"w"))) {
+					fwrite(usb_state_str[cmd], 1, strlen(usb_state_str[cmd]),fp);	//power
+				}	else if ((fp = fopen(POWER_ATTR_FILENAME_5,"w"))) {
+					fwrite(usb_state_str[cmd], 1, strlen(usb_state_str[cmd]),fp);	//power
+				}	else {
 					ret = -2;
 				}
-				if(fp) fclose(fp);
+				if (fp) fclose(fp);
 			}
 			else
 			{
-				strcpy(pullup_filename_str,PULLUP_FILE_NAME);
-				pullup_filename_str[15] = idx + '0';
-			  	if((fp = fopen(power_attr_filename_str[version],"w")) && (fpp = fopen(pullup_filename_str,"w"))
-					 && (fpo = fopen(otg_disable_filename_str[version],"w"))){ 
-					if(cmd == USB_CMD_OFF)
-					{
-					 	fwrite(usb_state_str[cmd], 1, strlen(usb_state_str[cmd]),fpo);	//otg		
-				    		fwrite(usb_state_str[cmd], 1, strlen(usb_state_str[cmd]),fpp);	//pullup
-				    		fwrite(usb_state_str[cmd], 1, strlen(usb_state_str[cmd]),fp);	//power
-					}
-					else
-					{ 
-					  	fwrite(usb_state_str[cmd], 1, strlen(usb_state_str[cmd]),fp);	//power 				
-				    		fwrite(usb_state_str[cmd], 1, strlen(usb_state_str[cmd]),fpo);	//otg		
-				    		fwrite(usb_state_str[cmd], 1, strlen(usb_state_str[cmd]),fpp);	//pullup
-				  	}				
-			  	}
-			  	else
-			  	{
-				  	ret = -2;
-			  	}
-			  	if(fp) 	fclose(fp);
-	    			if(fpp)	fclose(fpp);
-			  	if(fpo)	fclose(fpo);
-			}		
+				if (access(PULLUP_FILE_NAME, R_OK) == 0)
+				{
+					strcpy(pullup_filename,PULLUP_FILE_NAME);
+					strcpy(power_attr_filename,power_attr_filename_str[version]);
+					strcpy(otg_disable_filename,otg_disable_filename_str[version]);
+					pullup_filename[15] = idx + '0';
+				}
+				else
+				{
+					strcpy(pullup_filename,PULLUPS_FILE_NAME);
+					strcpy(power_attr_filename,POWER_ATTR_FILENAME_5);
+		      strcpy(otg_disable_filename,OTG_DISABLE_FILE_NAME_5);
+		      pullup_filename[18] = idx + 'a';
+				}
+        if ((fp = fopen(power_attr_filename,"w")) && (fpp = fopen(pullup_filename,"w"))
+					&& (fpo = fopen(otg_disable_filename,"w"))) {
+					if (cmd == USB_CMD_OFF)	{
+						fwrite(usb_state_str[cmd], 1, strlen(usb_state_str[cmd]),fpo);	//otg
+						fwrite(usb_state_str[cmd], 1, strlen(usb_state_str[cmd]),fpp);	//pullup
+						fwrite(usb_state_str[cmd], 1, strlen(usb_state_str[cmd]),fp);	//power
+					} else {
+						fwrite(usb_state_str[cmd], 1, strlen(usb_state_str[cmd]),fp);	//power
+						fwrite(usb_state_str[cmd], 1, strlen(usb_state_str[cmd]),fpo);	//otg
+						fwrite(usb_state_str[cmd], 1, strlen(usb_state_str[cmd]),fpp);	//pullup
+				  }
+				} else {
+					ret = -2;
+			  }
+			  if (fp)  fclose(fp);
+			  if (fpp) fclose(fpp);
+			  if (fpo) fclose(fpo);
+			}
 		}
-	}
-	else 
-	{
-		power_attr_filename_str[version][15] = idx + '0';
-		otg_disable_filename_str[version][15]= idx + '0';
+	}	else {
+		if (access(power_attr_filename_str[version], R_OK) == 0)
+		{
+			strcpy(power_attr_filename,power_attr_filename_str[version]);
+			strcpy(otg_disable_filename,otg_disable_filename_str[version]);
+			power_attr_filename[15] = idx + '0';
+			otg_disable_filename[15]= idx + '0';
+		}	else {
+			strcpy(power_attr_filename,POWER_ATTR_FILENAME_5);
+			strcpy(otg_disable_filename,OTG_DISABLE_FILE_NAME_5);
+			power_attr_filename[18] = idx + 'a';
+			otg_disable_filename[18] = idx + 'a';
+		}
+
 		usb_gate_str[3] = idx + '0';
 
-		if(((gotgctl>>USB_ID)&0x1)==	USB_ID_HOST)
+		if (((gotgctl>>USB_ID)&0x1)==	USB_ID_HOST)
 		{
-			if((fp = fopen(power_attr_filename_str[version],"w"))){
-				if(cmd == USB_CMD_OFF)
+			if ((fp = fopen(power_attr_filename,"w"))) {
+				if (cmd == USB_CMD_OFF)
 				{
-				fwrite(usb_state_val[cmd], 1, strlen(usb_state_val[cmd]),fp);	//power	
+					fwrite(usb_state_val[cmd], 1, strlen(usb_state_val[cmd]),fp);	//power
 					fp_gate = fopen(USB_GATE_OFF_FILE_NAME,"w");
 					if(fp_gate){
 						fwrite(usb_gate_str,1,strlen(usb_gate_str),fp_gate);
@@ -326,14 +374,14 @@ static int set_power_ctl(int idx,int cmd)
 					}
 				}
 				else
-				{ 
-				  	fp_gate = fopen(USB_GATE_ON_FILE_NAME,"w");
+				{
+					fp_gate = fopen(USB_GATE_ON_FILE_NAME,"w");
 					if(fp_gate){
 						fwrite(usb_gate_str,1,strlen(usb_gate_str),fp_gate);
 						fclose(fp_gate);
 					}
 					fwrite(usb_state_val[cmd], 1, strlen(usb_state_val[cmd]),fp);	//power
-			  	}		
+			  }
 			}
 			else
 			{
@@ -343,38 +391,49 @@ static int set_power_ctl(int idx,int cmd)
 		}
 		else
 		{
-		  	if((fp = fopen(power_attr_filename_str[version],"w"))
-				 && (fpo = fopen(otg_disable_filename_str[version],"w"))){ 
+			if (access(power_attr_filename_str[version], R_OK) == 0)
+			{
+				strcpy(power_attr_filename,power_attr_filename_str[version]);
+				strcpy(otg_disable_filename,otg_disable_filename_str[version]);
+			}
+			else
+			{
+				strcpy(power_attr_filename,POWER_ATTR_FILENAME_5);
+				strcpy(otg_disable_filename,OTG_DISABLE_FILE_NAME_5);
+			}
+
+		  if ((fp = fopen(power_attr_filename,"w"))
+			 && (fpo = fopen(otg_disable_filename,"w"))){
 				if(cmd == USB_CMD_OFF)
 				{
-				 	fwrite(usb_state_val[cmd], 1, strlen(usb_state_val[cmd]),fpo);	//otg		
-			    		fwrite(usb_state_val[cmd], 1, strlen(usb_state_val[cmd]),fp);	//power
-			    		fp_gate = fopen(USB_GATE_OFF_FILE_NAME,"w");
+					fwrite(usb_state_val[cmd], 1, strlen(usb_state_val[cmd]),fpo);	//otg
+					fwrite(usb_state_val[cmd], 1, strlen(usb_state_val[cmd]),fp);	//power
+					fp_gate = fopen(USB_GATE_OFF_FILE_NAME,"w");
 					if(fp_gate){
 						fwrite(usb_gate_str,1,strlen(usb_gate_str),fp_gate);
 						fclose(fp_gate);
 					}
 				}
 				else
-				{ 
+				{
 					fp_gate = fopen(USB_GATE_ON_FILE_NAME,"w");
 					if(fp_gate){
 						fwrite(usb_gate_str,1,strlen(usb_gate_str),fp_gate);
 						fclose(fp_gate);
 					}
-				  	fwrite(usb_state_val[cmd], 1, strlen(usb_state_val[cmd]),fp);	//power 				
-			    		fwrite(usb_state_val[cmd], 1, strlen(usb_state_val[cmd]),fpo);	//otg		
-			  	}				
-		  	}
-		  	else
-		  	{
-			  	ret = -2;
-		  	}
-		  	if(fp) 	fclose(fp);
-		  	if(fpo)	fclose(fpo);
-		}	
+					fwrite(usb_state_val[cmd], 1, strlen(usb_state_val[cmd]),fp);	//power
+					fwrite(usb_state_val[cmd], 1, strlen(usb_state_val[cmd]),fpo);	//otg
+					}
+					}
+					else
+						{
+							ret = -2;
+						}
+		  if (fp) 	fclose(fp);
+		  if (fpo)	fclose(fpo);
+		}
 	}
-	
+
 	return ret;
 }
 
@@ -385,12 +444,15 @@ int get_dwc_driver_version(void)
 	int i;
 
 	dwc_driver_version = -1;
-	
-	fpv = fopen(DWC_OTG_VERSION_DIR,"r");
-	if(fpv){
-		if(fread(ver_buf,1,DWC_DRIVER_VERSION_LEN + 1,fpv) > 0){
-			for(i=DWC_DRIVER_1;i<DWC_DRIVER_MAX;i++){			
-				if(strncmp(ver_buf,dwc_driver_version_str[i],DWC_DRIVER_VERSION_LEN)==0){
+
+	if (access(DWC_OTG_VERSION_DIR, R_OK) == 0)
+		fpv = fopen(DWC_OTG_VERSION_DIR,"r");
+	else
+		fpv = fopen(DWC_OTGS_VERSION_DIR,"r");
+	if (fpv) {
+		if (fread(ver_buf,1,DWC_DRIVER_VERSION_LEN + 1,fpv) > 0) {
+			for (i=DWC_DRIVER_1;i<DWC_DRIVER_MAX;i++) {
+				if (strncmp(ver_buf,dwc_driver_version_str[i],DWC_DRIVER_VERSION_LEN) == 0) {
 					dwc_driver_version = i;
 					break;
 				}
@@ -399,7 +461,7 @@ int get_dwc_driver_version(void)
 		fclose(fpv);
 	}
 
-   	if(dwc_driver_version==-1){
+  if (dwc_driver_version == -1) {
 		//used other process for the version different from DWC_DRIVER_VERSION
 		return -1;
 	}
@@ -413,10 +475,10 @@ int get_dwc_driver_version(void)
 }
 
 int usbpower(int index,int cmd)
-{   
+{
 	int ret=0;
-	
-	if((cmd==USB_CMD_ON)||(cmd==USB_CMD_OFF))
+
+	if ((cmd == USB_CMD_ON) || (cmd == USB_CMD_OFF))
 	{
 		ret = set_power_ctl(index,cmd);
 	}
@@ -433,5 +495,3 @@ int usbpower(int index,int cmd)
 
 	return ret;
 }
-
-

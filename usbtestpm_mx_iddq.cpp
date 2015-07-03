@@ -34,17 +34,23 @@ int usbset(int index,int cmd)
 
 static const char USBA_DEVICE_PATH[] = "/sys/devices/lm0";
 static const char USBB_DEVICE_PATH[] = "/sys/devices/lm1";
+static const char USBAS_DEVICE_PATH[] = "/sys/devices/dwc2_a";
+static const char USBBS_DEVICE_PATH[] = "/sys/devices/dwc2_b";
 
 int check_usb_devices_exists(int port)
 {
 	if (port == 0) {
 	    if (access(USBA_DEVICE_PATH, R_OK) == 0) {    		
 	        return 0;
+	    } else if (access(USBAS_DEVICE_PATH, R_OK) == 0) {
+	        return 0;
 	    } else {    		  
 	        return -1;
 	    }
 	} else {
 	    if (access(USBB_DEVICE_PATH, R_OK) == 0) {    		
+	        return 0;
+	    } else if (access(USBBS_DEVICE_PATH, R_OK) == 0) {
 	        return 0;
 	    } else {    		  
 	        return -1;
